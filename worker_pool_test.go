@@ -1,7 +1,6 @@
 package worker_pool
 
 import (
-	"fmt"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -226,45 +225,4 @@ func TestSubmittingNilTaskIsANoOp(t *testing.T) {
 
 	wp.SubmitWait(func() { counter.Add(1) })
 	require.Equal(t, int64(2), counter.Load())
-}
-
-// --- Benchmarks ---
-
-func BenchmarkWorkerPool(b *testing.B) {
-	trivialTask := func() {}
-
-	cpuWorkTask := func() {
-		sum := 0
-		for i := range 100 {
-			sum += i
-		}
-	}
-
-	scenarios := []struct {
-		name       string
-		numWorkers int
-		task       func()
-	}{
-		{"1Worker_TrivialTask", 1, trivialTask},
-		{"4Workers_TrivialTask", 4, trivialTask},
-		{"16Workers_TrivialTask", 16, trivialTask},
-		{"1Worker_CpuWork", 1, cpuWorkTask},
-		{"4Workers_CpuWork", 4, cpuWorkTask},
-		{"16Workers_CpuWork", 16, cpuWorkTask},
-	}
-
-	for _, s := range scenarios {
-		b.Run(fmt.Sprintf("%s", s.name), func(b *testing.B) {
-			wp := NewWorkerPool(s.numWorkers)
-			defer wp.StopWait()
-
-			b.ResetTimer()
-
-			b.RunParallel(func(pb *testing.PB) {
-				for pb.Next() {
-					wp.Submit(s.task)
-				}
-			})
-		})
-	}
 }
