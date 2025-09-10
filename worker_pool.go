@@ -1,0 +1,149 @@
+// package worker_pool provides a robust and efficient implementation of a worker pool.
+package worker_pool
+
+import (
+	"fmt"
+	"sync"
+	"sync/atomic"
+)
+
+// WorkerPool manages a pool of goroutines to execute tasks concurrently.
+type WorkerPool struct {
+	numberOfWorkers int
+	tasks           chan func()
+	quit            chan struct{}
+	workerWg        sync.WaitGroup
+	taskWg          sync.WaitGroup
+	stopOnce        sync.Once
+	stopped         atomic.Bool
+}
+
+// NewWorkerPool creates and starts a new worker pool with a specified number of workers.
+// The pool starts running immediately and is ready to accept tasks.
+// It panics if numberOfWorkers is less than 1.
+func NewWorkerPool(numberOfWorkers int) *WorkerPool {
+	if numberOfWorkers < 1 {
+		panic(fmt.Sprintf("worker_pool: number of workers must be greater than 0, got %d", numberOfWorkers))
+	}
+
+	wp := &WorkerPool{
+		numberOfWorkers: numberOfWorkers,
+		tasks:           make(chan func()),
+		quit:            make(chan struct{}),
+	}
+
+	wp.workerWg.Add(numberOfWorkers)
+	for range numberOfWorkers {
+		go wp.worker()
+	}
+
+	return wp
+}
+
+// worker is the function executed by each goroutine in the pool.
+// It waits for tasks or a quit signal.
+func (wp *WorkerPool) worker() {
+	defer wp.workerWg.Done()
+	for {
+		select {
+		case task, ok := <-wp.tasks:
+			if !ok {
+				// The tasks channel was closed by StopWait(), indicating no more tasks will be sent.
+				return
+			}
+			task()
+		case <-wp.quit:
+			// The quit channel was closed by Stop(), indicating an immediate shutdown.
+			return
+		}
+	}
+}
+
+// Returns true if the task was successfully submitted, and false otherwise (e.g., if the pool is stopped).
+// This approach prevents deadlocks that could occur if a blocking submit call was interrupted by a shutdown signal.
+func (wp *WorkerPool) submitInternal(task func()) bool {
+	if wp.stopped.Load() {
+		return false
+	}
+
+	wp.taskWg.Add(1)
+	wrapperTask := func() {
+		defer wp.taskWg.Done()
+		task()
+	}
+
+	// A second check after incrementing the WaitGroup is crucial to avoid a race condition.
+	// If the pool is stopped between the first check and the select, this ensures we
+	// correctly decrement the WaitGroup and do not send the task.
+	if wp.stopped.Load() {
+		wp.taskWg.Done()
+		return false
+	}
+
+	select {
+	case wp.tasks <- wrapperTask:
+		return true
+	case <-wp.quit:
+		// The pool was stopped (using Stop()) while we were waiting to send the task.
+		// We must decrement the WaitGroup as the task was never executed.
+		wp.taskWg.Done()
+		return false
+	}
+}
+
+// Submit adds a task to the worker pool for asynchronous execution.
+// If the pool has been stopped, the task is silently ignored.
+func (wp *WorkerPool) Submit(task func()) {
+	wp.submitInternal(task)
+}
+
+// SubmitWait adds a task to the worker pool and blocks until its completion.
+// If the pool has been stopped, the task is ignored and the function returns immediately.
+func (wp *WorkerPool) SubmitWait(task func()) {
+	if wp.stopped.Load() {
+		return
+	}
+
+	var doneWg sync.WaitGroup
+	doneWg.Add(1)
+
+	wrapperTask := func() {
+		defer doneWg.Done()
+		task()
+	}
+
+	if wp.submitInternal(wrapperTask) {
+		// Only wait if the task was successfully submitted.
+		doneWg.Wait()
+	}
+}
+
+// Stop stops the worker pool, waiting only for the tasks that are currently
+// executing to complete. Any tasks remaining in the queue are discarded.
+// This method is idempotent and safe to call multiple times.
+func (wp *WorkerPool) Stop() {
+	wp.stopOnce.Do(func() {
+		wp.stopped.Store(true)
+		// Closing the quit channel signals all workers to terminate after finishing their current task.
+		close(wp.quit)
+		// We wait for all worker goroutines to exit.
+		wp.workerWg.Wait()
+	})
+}
+
+// StopWait stops the worker pool, waiting for all submitted tasks to complete,
+// including those in the queue that have not yet started.
+// This method is idempotent and safe to call multiple times.
+func (wp *WorkerPool) StopWait() {
+	wp.stopOnce.Do(func() {
+		wp.stopped.Store(true)
+		// First, wait for the task WaitGroup. This ensures that all tasks that have been
+		// successfully submitted are completed before we proceed with the shutdown.
+		wp.taskWg.Wait()
+		// Closing the tasks channel signals to the workers that no more tasks will be sent,
+		// allowing them to exit their loop gracefully after the channel is empty.
+		close(wp.tasks)
+		// Finally, we wait for all worker goroutines to exit.
+		wp.workerWg.Wait()
+	})
+}
