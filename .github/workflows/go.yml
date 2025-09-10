@@ -1,0 +1,82 @@
+name: Go CI
+
+on:
+  push:
+    branches:
+      - '**'
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        go-version: ['1.25.x', 'stable', 'tip']
+    continue-on-error: ${{ matrix.go-version == 'tip' }}
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Go ${{ matrix.go-version }}
+      uses: actions/setup-go@v5
+      with:
+        go-version: ${{ matrix.go-version }}
+
+    - name: Run Tests with Race Detector and Generate Report
+      run: go test -v -race -json ./... | tee test-results.json
+
+    - name: Upload Test Results Artifact
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-results-${{ matrix.go-version }}
+        path: test-results.json
+
+  update-coverage-badge:
+    needs: build
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Go (stable)
+      uses: actions/setup-go@v5
+      with:
+        go-version: 'stable'
+
+    - name: Generate coverage report
+      run: go test -race -covermode=atomic -coverprofile=coverage.out ./...
+
+    - name: Generate coverage badge
+      uses: tj-actions/coverage-badge-go@v2
+      with:
+        filename: coverage.out
+
+    - name: Verify Changed files
+      uses: tj-actions/verify-changed-files@v16
+      id: verify-changed-files
+      with:
+        files: README.md
+
+    - name: Commit changes
+      if: steps.verify-changed-files.outputs.files_changed == 'true'
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add README.md
+        git commit -m "chore: Updated coverage badge."
+
+    - name: Push changes
+      if: steps.verify-changed-files.outputs.files_changed == 'true'
+      uses: ad-m/github-push-action@master
+      with:
+        github_token: ${{ github.token }}
+        branch: ${{ github.head_ref }}
