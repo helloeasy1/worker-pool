@@ -251,3 +251,32 @@ func TestSubmittingNilTaskIsANoOp(t *testing.T) {
 	wp.SubmitWait(func() { counter.Add(1) })
 	require.Equal(t, int64(2), counter.Load())
 }
+
+func TestWorkerPanicRecovery(t *testing.T) {
+	wp := NewWorkerPool(1)
+	defer wp.StopWait()
+
+	var wg sync.WaitGroup
+	wg.Add(2)
+
+	var secondTaskExecuted atomic.Bool
+	goodTask := func() {
+		secondTaskExecuted.Store(true)
+		wg.Done()
+	}
+
+	// This task will panic. The worker should recover from it.
+	panickingTask := func() {
+		defer wg.Done()
+		panic("test-induced panic")
+	}
+
+	assert.NotPanics(t, func() {
+		wp.Submit(panickingTask)
+		wp.Submit(goodTask)
+	})
+
+	wg.Wait()
+
+	assert.True(t, secondTaskExecuted.Load(), "The pool should have executed the task submitted after the panicking one.")
+}

@@ -3,6 +3,8 @@ package worker_pool
 
 import (
 	"fmt"
+	"log"
+	"runtime/debug"
 	"sync"
 	"sync/atomic"
 )
@@ -71,7 +73,15 @@ func (wp *WorkerPool) worker() {
 				return
 			}
 
-			task.userTask()
+			// Wrap task execution in a deferred function to recover from panics.
+			func() {
+				defer func() {
+					if r := recover(); r != nil {
+						log.Printf("worker panic: recovered from panic in user task: %v\n%s", r, debug.Stack())
+					}
+				}()
+				task.userTask()
+			}()
 
 			// If SubmitWait was used, signal its WaitGroup.
 			if task.waiter != nil {
