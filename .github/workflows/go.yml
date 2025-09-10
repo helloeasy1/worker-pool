@@ -54,6 +54,19 @@ jobs:
     - name: Generate coverage report
       run: |
         go test -v -race ./... -covermode=atomic -coverprofile=coverage.out
+    
+    - name: Generate HTML coverage report
+      run: go tool cover -html=coverage.out -o coverage.html
+
+    - name: Upload HTML Coverage Report Artifact
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage-report-html
+        path: coverage.html
+
+    - name: Format coverage report for badge generation
+      run: go tool cover -func=coverage.out -o=coverage.out
 
     - name: Generate coverage badge
       uses: tj-actions/coverage-badge-go@v2
@@ -80,13 +93,3 @@ jobs:
       with:
         github_token: ${{ github.token }}
         branch: ${{ github.head_ref }}
-
-    - name: Generate HTML coverage report
-      run: go tool cover -html=coverage.out -o coverage.html
-
-    - name: Upload HTML Coverage Report Artifact
-      if: always()
-      uses: actions/upload-artifact@v4
-      with:
-        name: coverage-report-html
-        path: coverage.html
