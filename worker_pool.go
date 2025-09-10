@@ -92,14 +92,20 @@ func (wp *WorkerPool) submitInternal(task func()) bool {
 }
 
 // Submit adds a task to the worker pool for asynchronous execution.
-// If the pool has been stopped, the task is silently ignored.
+// If the task is nil or the pool has been stopped, the task is silently ignored.
 func (wp *WorkerPool) Submit(task func()) {
+	if task == nil {
+		return
+	}
 	wp.submitInternal(task)
 }
 
 // SubmitWait adds a task to the worker pool and blocks until its completion.
-// If the pool has been stopped, the task is ignored and the function returns immediately.
+// If the task is nil or the pool has been stopped, the task is ignored and the function returns immediately.
 func (wp *WorkerPool) SubmitWait(task func()) {
+	if task == nil {
+		return
+	}
 	if wp.stopped.Load() {
 		return
 	}
