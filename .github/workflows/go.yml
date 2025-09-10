@@ -52,7 +52,9 @@ jobs:
         go-version: 'stable'
 
     - name: Generate coverage report
-      run: go test -race -covermode=atomic -coverprofile=coverage.out ./...
+      run: |
+        go test -v ./... -covermode=count -coverprofile=coverage.out
+        go tool cover -func=coverage.out -o=coverage.out
 
     - name: Generate coverage badge
       uses: tj-actions/coverage-badge-go@v2
