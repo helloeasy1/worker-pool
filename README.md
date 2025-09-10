@@ -1,2 +1,2 @@
 # worker-pool
-![Coverage](https://img.shields.io/badge/Coverage-6-red)
+![Coverage](https://img.shields.io/badge/Coverage-96.0%25-brightgreen)
