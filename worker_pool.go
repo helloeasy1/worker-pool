@@ -1,4 +1,4 @@
-// package worker_pool provides a robust and efficient implementation of a worker pool.
+// Package worker_pool provides a robust and efficient implementation of a worker pool
 package worker_pool
 
 import (
@@ -7,7 +7,7 @@ import (
 	"sync/atomic"
 )
 
-// WorkerPool manages a pool of goroutines to execute tasks concurrently.
+// WorkerPool manages a pool of goroutines to execute tasks concurrently
 type WorkerPool struct {
 	numberOfWorkers int
 	tasks           chan func()
@@ -40,7 +40,7 @@ func NewWorkerPool(numberOfWorkers int) *WorkerPool {
 	return wp
 }
 
-// worker is the function executed by each goroutine in the pool.
+// Worker is the function executed by each goroutine in the pool.
 // It waits for tasks or a quit signal.
 func (wp *WorkerPool) worker() {
 	defer wp.workerWg.Done()
@@ -48,19 +48,18 @@ func (wp *WorkerPool) worker() {
 		select {
 		case task, ok := <-wp.tasks:
 			if !ok {
-				// The tasks channel was closed by StopWait(), indicating no more tasks will be sent.
+				// The tasks channel was closed by StopWait(), indicating no more tasks will be sent
 				return
 			}
 			task()
 		case <-wp.quit:
-			// The quit channel was closed by Stop(), indicating an immediate shutdown.
+			// The quit channel was closed by Stop(), indicating an immediate shutdown
 			return
 		}
 	}
 }
 
-// Returns true if the task was successfully submitted, and false otherwise (e.g., if the pool is stopped).
-// This approach prevents deadlocks that could occur if a blocking submit call was interrupted by a shutdown signal.
+// Returns true if the task was successfully submitted, and false otherwise (if the pool is stopped)
 func (wp *WorkerPool) submitInternal(task func()) bool {
 	if wp.stopped.Load() {
 		return false
@@ -72,9 +71,7 @@ func (wp *WorkerPool) submitInternal(task func()) bool {
 		task()
 	}
 
-	// A second check after incrementing the WaitGroup is crucial to avoid a race condition.
-	// If the pool is stopped between the first check and the select, this ensures we
-	// correctly decrement the WaitGroup and do not send the task.
+	// A second check to avoid a race condition
 	if wp.stopped.Load() {
 		wp.taskWg.Done()
 		return false
@@ -84,8 +81,7 @@ func (wp *WorkerPool) submitInternal(task func()) bool {
 	case wp.tasks <- wrapperTask:
 		return true
 	case <-wp.quit:
-		// The pool was stopped (using Stop()) while we were waiting to send the task.
-		// We must decrement the WaitGroup as the task was never executed.
+		// The pool was stopped (using Stop()) while we were waiting to send the task
 		wp.taskWg.Done()
 		return false
 	}
@@ -119,7 +115,7 @@ func (wp *WorkerPool) SubmitWait(task func()) {
 	}
 
 	if wp.submitInternal(wrapperTask) {
-		// Only wait if the task was successfully submitted.
+		// Only wait if the task was successfully submitted
 		doneWg.Wait()
 	}
 }
@@ -130,9 +126,7 @@ func (wp *WorkerPool) SubmitWait(task func()) {
 func (wp *WorkerPool) Stop() {
 	wp.stopOnce.Do(func() {
 		wp.stopped.Store(true)
-		// Closing the quit channel signals all workers to terminate after finishing their current task.
 		close(wp.quit)
-		// We wait for all worker goroutines to exit.
 		wp.workerWg.Wait()
 	})
 }
@@ -143,13 +137,8 @@ func (wp *WorkerPool) Stop() {
 func (wp *WorkerPool) StopWait() {
 	wp.stopOnce.Do(func() {
 		wp.stopped.Store(true)
-		// First, wait for the task WaitGroup. This ensures that all tasks that have been
-		// successfully submitted are completed before we proceed with the shutdown.
 		wp.taskWg.Wait()
-		// Closing the tasks channel signals to the workers that no more tasks will be sent,
-		// allowing them to exit their loop gracefully after the channel is empty.
 		close(wp.tasks)
-		// Finally, we wait for all worker goroutines to exit.
 		wp.workerWg.Wait()
 	})
 }
