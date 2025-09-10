@@ -168,7 +168,6 @@ func TestShutdownIdempotency(t *testing.T) {
 	})
 }
 
-// TestRaceCondition simulates a high-contention environment to be run with `go test -race`.
 func TestRaceCondition(t *testing.T) {
 	numWorkers := 8
 	numSubmitters := 50

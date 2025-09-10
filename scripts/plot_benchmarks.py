@@ -5,14 +5,10 @@ import re
 import pandas as pd
 import matplotlib.pyplot as plt
 
-# Use a professional plotting style
 plt.style.use("seaborn-v0_8-whitegrid")
 
 
 def parse_benchmark_name(name):
-    """Parses the complex benchmark name into a structured dictionary."""
-    # The benchmark name from the output can have a -GOMAXPROCS suffix.
-    # We split it off first to handle it cleanly.
     name_parts = name.split("-")
     base_name = name_parts[0]
 
@@ -25,7 +21,6 @@ def parse_benchmark_name(name):
 
     data["Benchmark"] = parts[0]
 
-    # Clean up and convert types
     if "Workers" in data:
         data["Workers"] = int(data["Workers"])
     if "Submitters" in data:
@@ -35,39 +30,31 @@ def parse_benchmark_name(name):
 
 
 def load_benchmark_data(filepath):
-    """Loads benchmark data from Go's JSON output format."""
     records = []
     with open(filepath, "r") as f:
         for line in f:
             try:
                 record = json.loads(line)
-                # We only care about the final output lines that contain benchmark results.
                 if record.get("Action") == "output" and " ns/op" in record.get(
                     "Output", ""
                 ):
                     output = record["Output"].strip()
 
-                    # Extract the full benchmark name (e.g., BenchmarkSubmit/Task=...-8)
                     full_name = output.split()[0]
 
-                    # Extract the performance metric
                     ns_op_match = re.search(r"(\d+(\.\d+)?)\s+ns/op", output)
                     if ns_op_match:
                         parsed_name = parse_benchmark_name(full_name)
                         parsed_name["ns_op"] = float(ns_op_match.group(1))
                         records.append(parsed_name)
             except (json.JSONDecodeError, IndexError):
-                # Ignore lines that aren't valid JSON or don't have the expected format.
                 continue
     return pd.DataFrame(records)
 
 
 def plot_cpu_scaling(df, output_dir):
-    """Plots the performance of CPU-bound tasks as the number of workers increases."""
     print("Generating CPU-bound scaling plot...")
 
-    # Filter for CPU tasks with a specific number of submitters for a clean plot.
-    # We choose the median number of submitters from the test run for robustness.
     median_submitters = df["Submitters"].median()
     cpu_df = df[
         (df["Task"] == "CPU") & (df["Submitters"] == median_submitters)
@@ -94,7 +81,6 @@ def plot_cpu_scaling(df, output_dir):
 
 
 def plot_io_scaling(df, output_dir):
-    """Plots the performance of I/O-bound tasks as the number of workers increases."""
     print("Generating I/O-bound scaling plot...")
 
     median_submitters = df["Submitters"].median()
@@ -124,14 +110,11 @@ def plot_io_scaling(df, output_dir):
 
 
 def plot_overhead_comparison(df, output_dir):
-    """Compares the overhead of the worker pool vs. spawning a new goroutine."""
     print("Generating overhead comparison plot...")
 
-    # Find the best-case (minimum) overhead for the worker pool on a trivial task.
     pool_df = df[(df["Benchmark"] == "BenchmarkSubmit") & (df["Task"] == "Trivial")]
     pool_overhead = pool_df["ns_op"].min() if not pool_df.empty else float("nan")
 
-    # Find the overhead for the baseline goroutine-per-task approach.
     goroutine_df = df[
         (df["Benchmark"] == "BenchmarkGoroutinePerTask") & (df["Task"] == "Trivial")
     ]
