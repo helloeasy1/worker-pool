@@ -96,11 +96,9 @@ func TestStop_AbruptShutdown(t *testing.T) {
 
 	// Call Stop() and unblock the workers concurrently to avoid a deadlock
 	var stopWg sync.WaitGroup
-	stopWg.Add(1)
-	go func() {
-		defer stopWg.Done()
+	stopWg.Go(func() {
 		wp.Stop()
-	}()
+	})
 
 	time.Sleep(20 * time.Millisecond)
 
@@ -149,11 +147,9 @@ func TestShutdownIdempotency(t *testing.T) {
 
 		var wg sync.WaitGroup
 		for range 5 {
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
+			wg.Go(func() {
 				assert.NotPanics(t, func() { wp.Stop() })
-			}()
+			})
 		}
 		wg.Wait()
 	})
@@ -164,11 +160,9 @@ func TestShutdownIdempotency(t *testing.T) {
 
 		var wg sync.WaitGroup
 		for range 5 {
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
+			wg.Go(func() {
 				assert.NotPanics(t, func() { wp.StopWait() })
-			}()
+			})
 		}
 		wg.Wait()
 	})

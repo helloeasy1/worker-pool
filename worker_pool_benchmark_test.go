@@ -94,11 +94,9 @@ func BenchmarkGoroutinePerTask(b *testing.B) {
 			b.RunParallel(func(pb *testing.PB) {
 				var wg sync.WaitGroup
 				for pb.Next() {
-					wg.Add(1)
-					go func() {
-						defer wg.Done()
+					wg.Go(func() {
 						taskFunc()
-					}()
+					})
 				}
 				wg.Wait()
 			})
