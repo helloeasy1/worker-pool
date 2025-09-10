@@ -7,6 +7,10 @@ import (
 	"sync/atomic"
 )
 
+// Test-only hook for pausing at a critical point.
+// Has zero performance impact in production.
+var submitInternalHook func()
+
 // WorkerPool manages a pool of goroutines to execute tasks concurrently
 type WorkerPool struct {
 	numberOfWorkers int
@@ -69,6 +73,10 @@ func (wp *WorkerPool) submitInternal(task func()) bool {
 	wrapperTask := func() {
 		defer wp.taskWg.Done()
 		task()
+	}
+
+	if submitInternalHook != nil {
+		submitInternalHook()
 	}
 
 	// A second check to avoid a race condition

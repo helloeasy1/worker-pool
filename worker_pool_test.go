@@ -204,6 +204,38 @@ func TestRaceCondition(t *testing.T) {
 	assert.Equal(t, expectedTotal, tasksExecuted.Load(), "All submitted tasks should be executed under high contention")
 }
 
+func TestSubmitRaceConditionCoverage(t *testing.T) {
+	defer func() { submitInternalHook = nil }()
+
+	wp := NewWorkerPool(2)
+
+	pauseSubmitter := &sync.WaitGroup{}
+	pauseSubmitter.Add(1)
+
+	submitInternalHook = func() {
+		pauseSubmitter.Wait()
+	}
+
+	submitterDone := &sync.WaitGroup{}
+	submitterDone.Go(func() {
+		wp.Submit(func() {
+			t.Error("task should not have been executed")
+		})
+	})
+
+	time.Sleep(20 * time.Millisecond)
+
+	wp.Stop()
+
+	pauseSubmitter.Done()
+
+	submitterDone.Wait()
+
+	assert.NotPanics(t, func() {
+		wp.StopWait() // This would hang if taskWg was not correctly decremented.
+	})
+}
+
 func TestSubmittingNilTaskIsANoOp(t *testing.T) {
 	var counter atomic.Int64
 	wp := NewWorkerPool(2)
