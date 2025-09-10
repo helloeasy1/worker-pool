@@ -18,6 +18,7 @@ Managing a large number of concurrent tasks efficiently can be complex. Spawning
 - **Automatic Backpressure:** The pool naturally applies backpressure when all workers are saturated, preventing unbounded queue growth and system overload.
 - **Graceful vs. Abrupt Shutdown:** Choose between two shutdown strategies: `StopWait()` to finish all queued tasks, or `Stop()` to terminate quickly, completing only in-flight tasks.
 - **Concurrency Safe:** Designed from the ground up to be safe for concurrent use and rigorously tested with the Go race detector.
+- **Panic Recovery:** Each worker is equipped with a panic recovery mechanism. If a submitted task panics, the pool logs the error and stack trace, then continues processing other tasks. This ensures the entire application remains stable and does not crash due to faulty user code.
 - **100% Test Coverage:** Every line of code is covered by deterministic unit and integration tests, ensuring reliability.
 
 ## Performance Highlights
