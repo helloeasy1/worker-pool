@@ -14,7 +14,7 @@ var trivialTask = func() {}
 
 var cpuBoundTask = func() {
 	var counter int
-	for range 1000 {
+	for range 100000 {
 		counter++
 	}
 }
@@ -27,7 +27,7 @@ var ioBoundTask = func() {
 
 func BenchmarkSubmit(b *testing.B) {
 	tasks := map[string]func(){
-		"Trivial": cpuBoundTask,
+		"Trivial": trivialTask,
 		"CPU":     cpuBoundTask,
 		"IO":      ioBoundTask,
 	}
@@ -61,7 +61,7 @@ func BenchmarkSubmit(b *testing.B) {
 func BenchmarkSubmitWait(b *testing.B) {
 	// For SubmitWait, the task duration dominates the result, so we focus on a CPU-bound task.
 	taskFunc := cpuBoundTask
-	workerCounts := []int{1, 4, runtime.NumCPU(), 32}
+	workerCounts := []int{1, 4, runtime.NumCPU(), 32, 128}
 
 	for _, numWorkers := range workerCounts {
 		benchName := fmt.Sprintf("Task=CPU/Workers=%03d", numWorkers)
