@@ -14,8 +14,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        go-version: ['1.25.x', 'stable', 'tip']
-    continue-on-error: ${{ matrix.go-version == 'tip' }}
+        go-version: ['1.25.x', 'stable']
 
     steps:
     - name: Checkout repository
