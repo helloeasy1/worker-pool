@@ -3,6 +3,7 @@
 [![Go CI](https://github.com/GregoryKogan/worker-pool/actions/workflows/go.yml/badge.svg?branch=main)](https://github.com/GregoryKogan/worker-pool/actions/workflows/go.yml)
 ![Coverage](https://img.shields.io/badge/Coverage-100.0%25-brightgreen)
 [![Go Report Card](https://goreportcard.com/badge/github.com/GregoryKogan/worker-pool)](https://goreportcard.com/report/github.com/GregoryKogan/worker-pool)
+[![Go Reference](https://pkg.go.dev/badge/github.com/GregoryKogan/worker-pool.svg)](https://pkg.go.dev/github.com/GregoryKogan/worker-pool)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
 ---
